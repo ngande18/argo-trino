@@ -1,0 +1,24 @@
+# Default values for bootstrap chart
+# These will be overridden by ApplicationSet
+
+namespace: placeholder
+clusterName: placeholder
+
+appProject:
+  name: placeholder
+  description: Placeholder AppProject
+  sourceRepos:
+    - '*'
+  destinations:
+    - namespace: '*'
+      server: '*'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  orphanedResources:
+    warn: true
+
+# Made with Bob

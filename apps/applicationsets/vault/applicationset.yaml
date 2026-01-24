@@ -1,0 +1,58 @@
+# Vault ApplicationSet - Generates Vault applications from cluster values files
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: vault-applicationset
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/your-org/your-repo.git
+        revision: HEAD
+        files:
+          - path: "apps/values/clusters/*.yaml"
+  template:
+    metadata:
+      name: 'vault-{{.cluster.name}}'
+      namespace: argocd
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: '{{.appProject.name}}'
+      sources:
+        - repoURL: '{{.applications.vault.chart.repoURL}}'
+          chart: '{{.applications.vault.chart.name}}'
+          targetRevision: '{{.applications.vault.chart.version}}'
+          helm:
+            releaseName: vault
+            valueFiles:
+              - $values/{{.applications.vault.valuesFile}}
+        - repoURL: '{{.valuesRepo.url}}'
+          targetRevision: '{{.valuesRepo.targetRevision}}'
+          ref: values
+      destination:
+        server: '{{.cluster.server}}'
+        namespace: '{{.applications.vault.namespace}}'
+      syncPolicy:
+        automated:
+          prune: {{.applications.vault.syncPolicy.automated.prune}}
+          selfHeal: {{.applications.vault.syncPolicy.automated.selfHeal}}
+          allowEmpty: {{.applications.vault.syncPolicy.automated.allowEmpty}}
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+        retry:
+          limit: {{.applications.vault.syncPolicy.retry.limit}}
+          backoff:
+            duration: {{.applications.vault.syncPolicy.retry.backoff.duration}}
+            factor: {{.applications.vault.syncPolicy.retry.backoff.factor}}
+            maxDuration: {{.applications.vault.syncPolicy.retry.backoff.maxDuration}}
+      ignoreDifferences:
+        - group: admissionregistration.k8s.io
+          kind: MutatingWebhookConfiguration
+          jqPathExpressions:
+            - '.webhooks[]?.clientConfig.caBundle'
+
+# Made with Bob

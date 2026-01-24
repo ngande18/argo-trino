@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ .Values.appProject.name }}
+  namespace: argocd
+spec:
+  description: {{ .Values.appProject.description }}
+  sourceRepos:
+    {{- range .Values.appProject.sourceRepos }}
+    - {{ . }}
+    {{- end }}
+  destinations:
+    {{- range .Values.appProject.destinations }}
+    - namespace: {{ .namespace }}
+      server: {{ .server }}
+    {{- end }}
+  clusterResourceWhitelist:
+    {{- range .Values.appProject.clusterResourceWhitelist }}
+    - group: {{ .group }}
+      kind: {{ .kind }}
+    {{- end }}
+  namespaceResourceWhitelist:
+    {{- range .Values.appProject.namespaceResourceWhitelist }}
+    - group: {{ .group }}
+      kind: {{ .kind }}
+    {{- end }}
+  orphanedResources:
+    warn: {{ .Values.appProject.orphanedResources.warn }}
+
+# Made with Bob

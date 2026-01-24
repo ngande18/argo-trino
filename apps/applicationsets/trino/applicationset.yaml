@@ -1,0 +1,53 @@
+# Trino ApplicationSet - Generates Trino applications from cluster values files
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: trino-applicationset
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/your-org/your-repo.git
+        revision: HEAD
+        files:
+          - path: "apps/values/clusters/*.yaml"
+  template:
+    metadata:
+      name: 'trino-{{.cluster.name}}'
+      namespace: argocd
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: '{{.appProject.name}}'
+      sources:
+        - repoURL: '{{.applications.trino.chart.repoURL}}'
+          chart: '{{.applications.trino.chart.name}}'
+          targetRevision: '{{.applications.trino.chart.version}}'
+          helm:
+            releaseName: trino
+            valueFiles:
+              - $values/{{.applications.trino.valuesFile}}
+        - repoURL: '{{.valuesRepo.url}}'
+          targetRevision: '{{.valuesRepo.targetRevision}}'
+          ref: values
+      destination:
+        server: '{{.cluster.server}}'
+        namespace: '{{.applications.trino.namespace}}'
+      syncPolicy:
+        automated:
+          prune: {{.applications.trino.syncPolicy.automated.prune}}
+          selfHeal: {{.applications.trino.syncPolicy.automated.selfHeal}}
+          allowEmpty: {{.applications.trino.syncPolicy.automated.allowEmpty}}
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+        retry:
+          limit: {{.applications.trino.syncPolicy.retry.limit}}
+          backoff:
+            duration: {{.applications.trino.syncPolicy.retry.backoff.duration}}
+            factor: {{.applications.trino.syncPolicy.retry.backoff.factor}}
+            maxDuration: {{.applications.trino.syncPolicy.retry.backoff.maxDuration}}
+
+# Made with Bob

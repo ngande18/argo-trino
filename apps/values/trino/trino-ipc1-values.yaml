@@ -1,0 +1,94 @@
+# Trino values for trino-ipc1 cluster
+image:
+  repository: trinodb/trino
+  tag: "435"
+  pullPolicy: IfNotPresent
+
+server:
+  workers: 3
+  node:
+    environment: production
+    dataDir: /data/trino
+    pluginDir: /usr/lib/trino/plugin
+
+  log:
+    trino:
+      level: INFO
+
+  config:
+    path: /etc/trino
+    http:
+      port: 8080
+    https:
+      enabled: false
+      port: 8443
+    query:
+      maxMemory: "4GB"
+      maxMemoryPerNode: "1GB"
+
+  coordinatorExtraConfig: |
+    query.max-execution-time=1h
+    query.max-run-time=2h
+
+  workerExtraConfig: |
+    query.max-execution-time=1h
+    query.max-run-time=2h
+
+coordinator:
+  jvm:
+    maxHeapSize: "8G"
+    gcMethod:
+      type: "UseG1GC"
+      g1:
+        heapRegionSize: "32M"
+
+  resources:
+    requests:
+      memory: "8Gi"
+      cpu: "2"
+    limits:
+      memory: "16Gi"
+      cpu: "4"
+
+worker:
+  jvm:
+    maxHeapSize: "8G"
+    gcMethod:
+      type: "UseG1GC"
+      g1:
+        heapRegionSize: "32M"
+
+  resources:
+    requests:
+      memory: "8Gi"
+      cpu: "2"
+    limits:
+      memory: "16Gi"
+      cpu: "4"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+
+# Catalog configurations
+catalogs:
+  tpch: |
+    connector.name=tpch
+    tpch.splits-per-node=4
+
+  memory: |
+    connector.name=memory
+    memory.max-data-per-node=128MB
+
+# Additional catalogs can be added here
+# Example for connecting to PostgreSQL via Vault secrets:
+#  postgresql: |
+#    connector.name=postgresql
+#    connection-url=jdbc:postgresql://postgres:5432/database
+#    connection-user=${ENV:DB_USER}
+#    connection-password=${ENV:DB_PASSWORD}
+
+# Made with Bob
