@@ -278,6 +278,9 @@ kubectl logs -n argocd -l app.kubernetes.io/name=argocd-application-controller
 ## Documentation
 
 - [Cluster Configuration Guide](apps/values/clusters/README.md) - Detailed cluster config documentation
+- [Deployment Guide](DEPLOYMENT-GUIDE.md) - Step-by-step deployment instructions
+- [Architecture Guide](ARCHITECTURE.md) - Detailed architecture documentation
+- [Cluster Onboarding Guide](CLUSTER-ONBOARDING.md) - Adding new clusters (production or test-first)
 - [ArgoCD ApplicationSets](https://argo-cd.readthedocs.io/en/stable/user-guide/application-set/) - Official documentation
 
 ## Support
