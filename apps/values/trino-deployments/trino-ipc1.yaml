@@ -12,7 +12,7 @@ cluster:
 git:
   repoURL: https://github.com/your-org/your-repo.git
   targetRevision: HEAD
-  
+
 # AppProject configuration
 appProject:
   name: trino-ipc1
@@ -57,7 +57,7 @@ applications:
           duration: 5s
           factor: 2
           maxDuration: 3m
-  
+
   vault:
     enabled: true
     namespace: vault
@@ -85,10 +85,5 @@ applications:
         kind: MutatingWebhookConfiguration
         jqPathExpressions:
           - '.webhooks[]?.clientConfig.caBundle'
-
-# Git repository for values files
-valuesRepo:
-  url: https://github.com/your-org/your-repo.git
-  targetRevision: HEAD
 
 # Made with Bob

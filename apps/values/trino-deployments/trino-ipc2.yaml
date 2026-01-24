@@ -86,9 +86,4 @@ applications:
         jqPathExpressions:
           - '.webhooks[]?.clientConfig.caBundle'
 
-# Git repository for values files
-valuesRepo:
-  url: https://github.com/your-org/your-repo.git
-  targetRevision: HEAD
-
 # Made with Bob
