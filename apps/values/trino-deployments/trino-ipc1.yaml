@@ -4,9 +4,9 @@ trinoDeployment:
   description: Trino instance trino-ipc1
 
 # Kubernetes cluster where this instance will be deployed
+# Use the cluster name as registered in ArgoCD
 cluster:
   name: ipc-cluster-1
-  server: https://kubernetes.default.svc
 
 # Git repository configuration
 git:
@@ -21,9 +21,9 @@ appProject:
     - '*'
   destinations:
     - namespace: trino-ipc1
-      server: https://kubernetes.default.svc
+      name: ipc-cluster-1
     - namespace: vault
-      server: https://kubernetes.default.svc
+      name: ipc-cluster-1
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'

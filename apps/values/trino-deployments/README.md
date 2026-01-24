@@ -1,35 +1,56 @@
-# Cluster Configuration Values
+# Trino Deployment Configuration Values
 
-This directory contains cluster-specific configuration files that drive the creation of AppProjects and ApplicationSets in ArgoCD.
+This directory contains deployment-specific configuration files that drive the creation of namespaces, AppProjects, and Applications in ArgoCD.
 
 ## Structure
 
-Each cluster has its own YAML configuration file:
-- `trino-ipc1.yaml` - Configuration for trino-ipc1 cluster
-- `trino-ipc2.yaml` - Configuration for trino-ipc2 cluster
+Each Trino deployment has its own YAML configuration file:
+- `trino-ipc1.yaml` - Configuration for trino-ipc1 deployment
+- `trino-ipc2.yaml` - Configuration for trino-ipc2 deployment
+- `cdaitrino-e3h.yaml` - Configuration for cdaitrino-e3h deployment (test environment)
 
 ## Configuration Format
 
-Each cluster configuration file contains:
+Each deployment configuration file contains:
 
-### 1. Cluster Information
+### 1. Deployment Information
 ```yaml
-cluster:
+trinoDeployment:
   name: trino-ipc1
-  server: https://kubernetes.default.svc
+  description: Trino instance trino-ipc1
 ```
 
-### 2. Git Repository Configuration
-Defines the Git repository and revision for ApplicationSets:
+### 2. Cluster Information
+```yaml
+# Use the cluster name as registered in ArgoCD
+cluster:
+  name: ipc-cluster-1
+```
+
+**How to get cluster names:**
+```bash
+# List all clusters registered in ArgoCD
+kubectl get secrets -n argocd -l argocd.argoproj.io/secret-type=cluster -o jsonpath='{range .items[*]}{.metadata.annotations.argocd\.argoproj\.io/cluster-name}{"\n"}{end}'
+
+# Or using ArgoCD CLI
+argocd cluster list
+```
+
+### 3. Git Repository Configuration
+Defines the Git repository and revision for all resources (bootstrap and applications):
 ```yaml
 git:
   repoURL: https://github.com/your-org/your-repo.git
-  targetRevision: HEAD
+  targetRevision: HEAD  # or feature/branch-name for testing
 ```
 
-**Important**: This configuration is used by all ApplicationSets (appprojects, trino, vault) to determine which Git repository and branch/tag to use for deployment.
+**Important**: This single `targetRevision` is used for:
+- Bootstrap resources (namespace, AppProject)
+- Application Helm values files (Trino, Vault)
 
-### 3. AppProject Configuration
+This ensures all resources for a deployment use the same Git branch, making it easy to test changes in feature branches.
+
+### 4. AppProject Configuration
 Defines the ArgoCD AppProject for the cluster:
 ```yaml
 appProject:
@@ -39,9 +60,9 @@ appProject:
     - '*'
   destinations:
     - namespace: trino-ipc1
-      server: https://kubernetes.default.svc
+      name: ipc-cluster-1  # Use cluster name, not server URL
     - namespace: vault
-      server: https://kubernetes.default.svc
+      name: ipc-cluster-1
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'
@@ -52,7 +73,7 @@ appProject:
     warn: true
 ```
 
-### 4. Application Configurations
+### 5. Application Configurations
 Defines applications to be deployed to the cluster:
 
 #### Trino Application
@@ -113,19 +134,13 @@ applications:
           - '.webhooks[]?.clientConfig.caBundle'
 ```
 
-### 4. Values Repository
-Git repository containing Helm values files:
-```yaml
-valuesRepo:
-  url: https://github.com/your-org/your-repo.git
-  targetRevision: HEAD
-```
-
 ## How It Works
 
-1. **AppProject Generation**: The `apps/applicationsets/appprojects-template.yaml` ApplicationSet reads these cluster configuration files and generates an AppProject for each cluster.
+1. **Bootstrap Resources**: The `apps/applicationsets/appprojects.yaml` ApplicationSet reads these deployment configuration files and uses the Helm chart in `apps/bootstrap/` to create:
+   - Namespace for the deployment
+   - AppProject with appropriate permissions
 
-2. **Application Generation**: The ApplicationSets in `apps/applicationsets/trino/` and `apps/applicationsets/vault/` read these configuration files and generate Application resources for each enabled application in each cluster.
+2. **Application Generation**: The ApplicationSets in `apps/applicationsets/trino/` and `apps/applicationsets/vault/` read these configuration files and generate Application resources for each enabled application.
 
 3. **Git Generator**: All ApplicationSets use the Git generator to automatically discover cluster configuration files:
    ```yaml
@@ -134,26 +149,30 @@ valuesRepo:
          repoURL: https://github.com/your-org/your-repo.git
          revision: HEAD
          files:
-           - path: "apps/values/clusters/*.yaml"
+           - path: "apps/values/trino-deployments/*.yaml"
    ```
 
-## Adding a New Cluster
+## Adding a New Deployment
 
-To add a new cluster:
+To add a new Trino deployment:
 
-1. Create a new configuration file: `apps/values/clusters/<cluster-name>.yaml`
-2. Copy the structure from an existing cluster file
-3. Update all cluster-specific values:
-   - `cluster.name`
+1. Create a new configuration file: `apps/values/trino-deployments/<deployment-name>.yaml`
+2. Copy the structure from an existing deployment file
+3. Update all deployment-specific values:
+   - `trinoDeployment.name` and `trinoDeployment.description`
+   - `cluster.name` (get from ArgoCD using the command above)
+   - `git.targetRevision` (use `HEAD` for main branch or feature branch for testing)
    - `appProject.name` and `appProject.description`
-   - `appProject.destinations` (namespaces)
+   - `appProject.destinations` (update namespaces and cluster names)
    - `applications.trino.namespace`
    - `applications.trino.valuesFile`
    - `applications.vault.valuesFile`
 4. Create corresponding Helm values files:
-   - `apps/values/trino/<cluster-name>-values.yaml`
-   - `apps/values/vault/<cluster-name>-values.yaml`
+   - `apps/values/trino/<deployment-name>-values.yaml`
+   - `apps/values/vault/<deployment-name>-values.yaml`
 5. Commit and push changes - ArgoCD will automatically detect and create resources
+
+**Note**: Multiple Trino deployments can run on the same Kubernetes cluster by using different namespaces.
 
 ## Disabling Applications
 
@@ -164,9 +183,24 @@ applications:
     enabled: false
 ```
 
+## Testing Changes with Feature Branches
+
+To test changes in a feature branch:
+
+1. Create a feature branch in your Git repository
+2. Update the deployment configuration:
+   ```yaml
+   git:
+     targetRevision: feature/my-test-branch
+   ```
+3. Commit and push - ArgoCD will deploy from the feature branch
+4. All resources (bootstrap and applications) will use the feature branch
+
+This is useful for testing changes before merging to main.
+
 ## Customizing Sync Policies
 
-Each application can have its own sync policy. Modify the `syncPolicy` section in the cluster configuration file to customize:
+Each application can have its own sync policy. Modify the `syncPolicy` section in the deployment configuration file to customize:
 - Automated sync behavior
 - Sync options
 - Retry logic
@@ -183,7 +217,7 @@ Each application can have its own sync policy. Modify the `syncPolicy` section i
 
 ### ApplicationSet Not Generating Resources
 - Verify the Git repository URL is correct in the ApplicationSet
-- Check that the cluster configuration file is in the correct path
+- Check that the deployment configuration file is in the correct path (`apps/values/trino-deployments/`)
 - Ensure the YAML syntax is valid
 - Check ArgoCD ApplicationSet controller logs
 
@@ -193,23 +227,13 @@ Each application can have its own sync policy. Modify the `syncPolicy` section i
 - Ensure the Helm chart repository is accessible
 - Review Application sync status and events in ArgoCD UI
 
-## Migration from Static Configuration
+## Key Differences from Cluster-Based Configuration
 
-The old static configuration files are:
-- `apps/applicationsets/appprojects.yaml` (static AppProjects)
-- `apps/applicationsets/trino/applicationset.yaml` (static list generator)
-- `apps/applicationsets/vault/applicationset.yaml` (static list generator)
+This deployment-based approach differs from traditional cluster-based configuration:
 
-The new template-based files are:
-- `apps/applicationsets/appprojects-template.yaml` (dynamic AppProject generator)
-- `apps/applicationsets/trino/applicationset-template.yaml` (dynamic Trino generator)
-- `apps/applicationsets/vault/applicationset-template.yaml` (dynamic Vault generator)
-
-To migrate:
-1. Review and update cluster configuration files
-2. Update Git repository URLs in template files
-3. Apply the new template-based ApplicationSets
-4. Verify resources are created correctly
-5. Remove old static ApplicationSets once verified
+1. **Multiple deployments per cluster**: You can run multiple Trino instances on the same Kubernetes cluster
+2. **Deployment-centric naming**: Resources are named after the deployment, not the cluster
+3. **Cluster name references**: Uses ArgoCD cluster names instead of server URLs
+4. **Single Git configuration**: One `git.targetRevision` controls all resources for a deployment
 
 # Made with Bob

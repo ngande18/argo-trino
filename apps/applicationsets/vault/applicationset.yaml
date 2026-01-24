@@ -33,7 +33,7 @@ spec:
           targetRevision: '{{.git.targetRevision}}'
           ref: values
       destination:
-        server: '{{.cluster.server}}'
+        name: '{{.cluster.name}}'
         namespace: '{{.applications.vault.namespace}}'
       syncPolicy:
         automated:
@@ -48,7 +48,8 @@ spec:
           backoff:
             duration: {{.applications.vault.syncPolicy.retry.backoff.duration}}
             factor: {{.applications.vault.syncPolicy.retry.backoff.factor}}
-            maxDuration: {{.applications.vault.syncPolicy.retry.backoff.maxDuration}}
+            maxDuration: >-
+              {{.applications.vault.syncPolicy.retry.backoff.maxDuration}}
       ignoreDifferences:
         - group: admissionregistration.k8s.io
           kind: MutatingWebhookConfiguration

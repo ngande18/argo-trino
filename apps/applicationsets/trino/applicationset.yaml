@@ -33,7 +33,7 @@ spec:
           targetRevision: '{{.git.targetRevision}}'
           ref: values
       destination:
-        server: '{{.cluster.server}}'
+        name: '{{.cluster.name}}'
         namespace: '{{.applications.trino.namespace}}'
       syncPolicy:
         automated:
@@ -48,6 +48,7 @@ spec:
           backoff:
             duration: {{.applications.trino.syncPolicy.retry.backoff.duration}}
             factor: {{.applications.trino.syncPolicy.retry.backoff.factor}}
-            maxDuration: {{.applications.trino.syncPolicy.retry.backoff.maxDuration}}
+            maxDuration: >-
+              {{.applications.trino.syncPolicy.retry.backoff.maxDuration}}
 
 # Made with Bob

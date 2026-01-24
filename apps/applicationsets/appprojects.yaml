@@ -42,7 +42,7 @@ spec:
               destinations:
                 {{- range .appProject.destinations}}
                 - namespace: {{.namespace}}
-                  server: {{.server}}
+                  name: {{.name}}
                 {{- end}}
               clusterResourceWhitelist:
                 {{- range .appProject.clusterResourceWhitelist}}

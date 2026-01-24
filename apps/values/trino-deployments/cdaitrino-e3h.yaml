@@ -6,9 +6,9 @@ trinoDeployment:
 
 # Kubernetes cluster where this instance will be deployed
 # Note: Can be deployed to same cluster as other instances
+# Use the cluster name as registered in ArgoCD
 cluster:
   name: ipc-cluster-1  # Same cluster as trino-ipc1
-  server: https://kubernetes.default.svc
 
 # Git repository configuration
 # Using feature branch for testing new changes
@@ -24,9 +24,9 @@ appProject:
     - '*'
   destinations:
     - namespace: cdaitrino-e3h
-      server: https://kubernetes.default.svc
+      name: ipc-cluster-1
     - namespace: vault
-      server: https://kubernetes.default.svc
+      name: ipc-cluster-1
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'
