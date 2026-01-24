@@ -68,13 +68,26 @@ apps/
 
 ### Setup
 
-1. **Clone the repository:**
+1. **Get cluster names from ArgoCD:**
+   
+   Before configuring deployments, get the cluster names as registered in ArgoCD:
+   ```bash
+   # List all clusters registered in ArgoCD
+   kubectl get secrets -n argocd -l argocd.argoproj.io/secret-type=cluster -o jsonpath='{range .items[*]}{.metadata.annotations.argocd\.argoproj\.io/cluster-name}{"\n"}{end}'
+   
+   # Or using ArgoCD CLI
+   argocd cluster list
+   ```
+   
+   Use these cluster names in your deployment configuration files.
+
+2. **Clone the repository:**
    ```bash
    git clone <your-repo-url>
    cd argo-trino
    ```
 
-2. **Update Git repository URLs:**
+3. **Update Git repository URLs:**
    
    Edit these files and replace `https://github.com/your-org/your-repo.git` with your actual repository URL:
    - `apps/applicationsets/appprojects.yaml`
@@ -83,20 +96,20 @@ apps/
    - `apps/values/clusters/trino-ipc1.yaml`
    - `apps/values/clusters/trino-ipc2.yaml`
 
-3. **Review cluster configurations:**
+4. **Review cluster configurations:**
    ```bash
    cat apps/values/clusters/trino-ipc1.yaml
    cat apps/values/clusters/trino-ipc2.yaml
    ```
 
-4. **Apply the root application:**
+5. **Apply the root application:**
    ```bash
    kubectl apply -f apps/root-app/application.yaml
    ```
    
    Note: The root app uses the `default` ArgoCD project, so no separate AppProject is needed.
 
-5. **Verify deployment:**
+6. **Verify deployment:**
    ```bash
    # Check ApplicationSets
    kubectl get applicationsets -n argocd
