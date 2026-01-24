@@ -4,6 +4,7 @@ metadata:
   name: {{ .Values.namespace }}
   labels:
     managed-by: argocd
+    trino-deployment: {{ .Values.deploymentName }}
     cluster: {{ .Values.clusterName }}
 
 # Made with Bob

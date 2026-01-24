@@ -1,6 +1,11 @@
-# Cluster configuration for trino-ipc1
-cluster:
+# Trino instance configuration for trino-ipc1
+trinoDeployment:
   name: trino-ipc1
+  description: Trino instance trino-ipc1
+
+# Kubernetes cluster where this instance will be deployed
+cluster:
+  name: ipc-cluster-1
   server: https://kubernetes.default.svc
 
 # Git repository configuration
@@ -11,7 +16,7 @@ git:
 # AppProject configuration
 appProject:
   name: trino-ipc1
-  description: AppProject for trino-ipc1 cluster
+  description: AppProject for Trino instance trino-ipc1
   sourceRepos:
     - '*'
   destinations:

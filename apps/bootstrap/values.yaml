@@ -2,6 +2,7 @@
 # These will be overridden by ApplicationSet
 
 namespace: placeholder
+deploymentName: placeholder
 clusterName: placeholder
 
 appProject:

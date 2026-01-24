@@ -1,21 +1,29 @@
-# Cluster configuration for trino-ipc2
+# Trino instance configuration for cdaitrino-e3h
+# This instance uses a feature branch for testing
+trinoDeployment:
+  name: cdaitrino-e3h
+  description: Trino instance cdaitrino-e3h (TEST)
+
+# Kubernetes cluster where this instance will be deployed
+# Note: Can be deployed to same cluster as other instances
 cluster:
-  name: trino-ipc2
+  name: ipc-cluster-1  # Same cluster as trino-ipc1
   server: https://kubernetes.default.svc
 
 # Git repository configuration
+# Using feature branch for testing new changes
 git:
   repoURL: https://github.com/your-org/your-repo.git
-  targetRevision: HEAD
+  targetRevision: feature/cdaitrino-e3h-testing
 
 # AppProject configuration
 appProject:
-  name: trino-ipc2
-  description: AppProject for trino-ipc2 cluster
+  name: cdaitrino-e3h
+  description: AppProject for Trino instance cdaitrino-e3h (TEST)
   sourceRepos:
     - '*'
   destinations:
-    - namespace: trino-ipc2
+    - namespace: cdaitrino-e3h
       server: https://kubernetes.default.svc
     - namespace: vault
       server: https://kubernetes.default.svc
@@ -32,12 +40,12 @@ appProject:
 applications:
   trino:
     enabled: true
-    namespace: trino-ipc2
+    namespace: cdaitrino-e3h
     chart:
       repoURL: https://trinodb.github.io/charts
       name: trino
       version: 0.19.0
-    valuesFile: apps/values/trino/trino-ipc2-values.yaml
+    valuesFile: apps/values/trino/cdaitrino-e3h-values.yaml
     syncPolicy:
       automated:
         prune: true
@@ -60,7 +68,7 @@ applications:
       repoURL: https://helm.releases.hashicorp.com
       name: vault
       version: 0.28.0
-    valuesFile: apps/values/vault/trino-ipc2-values.yaml
+    valuesFile: apps/values/vault/cdaitrino-e3h-values.yaml
     syncPolicy:
       automated:
         prune: true

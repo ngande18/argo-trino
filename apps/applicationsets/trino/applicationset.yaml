@@ -12,10 +12,10 @@ spec:
         repoURL: https://github.com/your-org/your-repo.git
         revision: HEAD
         files:
-          - path: "apps/values/clusters/*.yaml"
+          - path: "apps/values/trino-deployments/*.yaml"
   template:
     metadata:
-      name: 'trino-{{.cluster.name}}'
+      name: 'trino-{{.trinoDeployment.name}}'
       namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
