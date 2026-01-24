@@ -29,8 +29,8 @@ spec:
             releaseName: trino
             valueFiles:
               - $values/{{.applications.trino.valuesFile}}
-        - repoURL: '{{.valuesRepo.url}}'
-          targetRevision: '{{.valuesRepo.targetRevision}}'
+        - repoURL: '{{.git.repoURL}}'
+          targetRevision: '{{.git.targetRevision}}'
           ref: values
       destination:
         server: '{{.cluster.server}}'

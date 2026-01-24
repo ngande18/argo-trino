@@ -3,6 +3,11 @@ cluster:
   name: trino-ipc2
   server: https://kubernetes.default.svc
 
+# Git repository configuration
+git:
+  repoURL: https://github.com/your-org/your-repo.git
+  targetRevision: HEAD
+
 # AppProject configuration
 appProject:
   name: trino-ipc2

@@ -23,8 +23,8 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/your-org/your-repo.git
-        targetRevision: HEAD
+        repoURL: '{{.git.repoURL}}'
+        targetRevision: '{{.git.targetRevision}}'
         path: apps/bootstrap
         helm:
           releaseName: 'setup-{{.cluster.name}}'

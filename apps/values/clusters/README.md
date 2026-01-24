@@ -19,7 +19,17 @@ cluster:
   server: https://kubernetes.default.svc
 ```
 
-### 2. AppProject Configuration
+### 2. Git Repository Configuration
+Defines the Git repository and revision for ApplicationSets:
+```yaml
+git:
+  repoURL: https://github.com/your-org/your-repo.git
+  targetRevision: HEAD
+```
+
+**Important**: This configuration is used by all ApplicationSets (appprojects, trino, vault) to determine which Git repository and branch/tag to use for deployment.
+
+### 3. AppProject Configuration
 Defines the ArgoCD AppProject for the cluster:
 ```yaml
 appProject:
@@ -42,7 +52,7 @@ appProject:
     warn: true
 ```
 
-### 3. Application Configurations
+### 4. Application Configurations
 Defines applications to be deployed to the cluster:
 
 #### Trino Application
