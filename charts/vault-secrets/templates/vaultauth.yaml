@@ -1,0 +1,25 @@
+{{- if .Values.vaultAuth.enabled }}
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: {{ .Values.vaultAuth.name }}
+  namespace: {{ .Values.vaultAuth.namespace | default (include "vault-secrets.namespace" .) }}
+  labels:
+    {{- include "vault-secrets.labels" . | nindent 4 }}
+spec:
+  vaultConnectionRef: {{ .Values.vaultAuth.vaultConnectionRef }}
+  method: kubernetes
+  mount: {{ .Values.vaultAuth.kubernetes.mount | default "kubernetes" }}
+  kubernetes:
+    role: {{ .Values.vaultAuth.kubernetes.role }}
+    serviceAccount: {{ .Values.vaultAuth.kubernetes.serviceAccount }}
+    {{- if .Values.vaultAuth.kubernetes.audiences }}
+    audiences:
+      {{- toYaml .Values.vaultAuth.kubernetes.audiences | nindent 6 }}
+    {{- end }}
+    {{- if .Values.vaultAuth.kubernetes.tokenExpirationSeconds }}
+    tokenExpirationSeconds: {{ .Values.vaultAuth.kubernetes.tokenExpirationSeconds }}
+    {{- end }}
+{{- end }}
+
+# Made with Bob

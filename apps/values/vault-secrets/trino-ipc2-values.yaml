@@ -1,0 +1,66 @@
+# Vault Secrets configuration for trino-ipc2
+
+vaultAuth:
+  enabled: true
+  name: trino-ipc2-vault-auth
+  vaultConnectionRef: vault-connection
+  kubernetes:
+    role: trino-ipc2-role
+    serviceAccount: trino
+    audiences:
+      - vault
+    mount: kubernetes
+
+vaultStaticSecrets:
+  # Database credentials
+  - name: trino-ipc2-db-credentials
+    enabled: true
+    vaultAuthRef: trino-ipc2-vault-auth
+    mount: secret
+    path: trino-ipc2/database
+    type: kv-v2
+    refreshAfter: 30s
+    hmacSecretData: true
+    rolloutRestartTargets:
+      - kind: Deployment
+        name: trino-coordinator
+      - kind: StatefulSet
+        name: trino-worker
+    destination:
+      name: trino-db-secret
+      create: true
+      labels:
+        app: trino
+        component: database
+      annotations:
+        reloader.stakater.com/match: "true"
+
+  # S3/Object Storage credentials
+  - name: trino-ipc2-s3-credentials
+    enabled: true
+    vaultAuthRef: trino-ipc2-vault-auth
+    mount: secret
+    path: trino-ipc2/s3
+    type: kv-v2
+    refreshAfter: 60s
+    hmacSecretData: true
+    destination:
+      name: trino-s3-secret
+      create: true
+      labels:
+        app: trino
+        component: storage
+
+  # Trino internal communication secrets
+  - name: trino-ipc2-internal-secrets
+    enabled: true
+    vaultAuthRef: trino-ipc2-vault-auth
+    mount: secret
+    path: trino-ipc2/internal
+    type: kv-v2
+    refreshAfter: 120s
+    destination:
+      name: trino-internal-secret
+      create: true
+
+# Made with Bob

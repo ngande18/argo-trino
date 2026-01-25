@@ -1,0 +1,70 @@
+# Vault Secrets configuration for cdaitrino-e3h (TEST)
+
+vaultAuth:
+  enabled: true
+  name: cdaitrino-e3h-vault-auth
+  vaultConnectionRef: vault-connection
+  kubernetes:
+    role: cdaitrino-e3h-role
+    serviceAccount: trino
+    audiences:
+      - vault
+    mount: kubernetes
+
+vaultStaticSecrets:
+  # Database credentials
+  - name: cdaitrino-e3h-db-credentials
+    enabled: true
+    vaultAuthRef: cdaitrino-e3h-vault-auth
+    mount: secret
+    path: cdaitrino-e3h/database
+    type: kv-v2
+    refreshAfter: 30s
+    hmacSecretData: true
+    rolloutRestartTargets:
+      - kind: Deployment
+        name: trino-coordinator
+      - kind: StatefulSet
+        name: trino-worker
+    destination:
+      name: trino-db-secret
+      create: true
+      labels:
+        app: trino
+        component: database
+        environment: test
+      annotations:
+        reloader.stakater.com/match: "true"
+
+  # S3/Object Storage credentials
+  - name: cdaitrino-e3h-s3-credentials
+    enabled: true
+    vaultAuthRef: cdaitrino-e3h-vault-auth
+    mount: secret
+    path: cdaitrino-e3h/s3
+    type: kv-v2
+    refreshAfter: 60s
+    hmacSecretData: true
+    destination:
+      name: trino-s3-secret
+      create: true
+      labels:
+        app: trino
+        component: storage
+        environment: test
+
+  # Trino internal communication secrets
+  - name: cdaitrino-e3h-internal-secrets
+    enabled: true
+    vaultAuthRef: cdaitrino-e3h-vault-auth
+    mount: secret
+    path: cdaitrino-e3h/internal
+    type: kv-v2
+    refreshAfter: 120s
+    destination:
+      name: trino-internal-secret
+      create: true
+      labels:
+        environment: test
+
+# Made with Bob

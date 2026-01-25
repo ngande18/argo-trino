@@ -1,0 +1,51 @@
+# Vault Secrets ApplicationSet - Generates Vault Secret applications from deployment values files
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: vault-secrets-applicationset
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/your-org/your-repo.git
+        revision: HEAD
+        files:
+          - path: "apps/values/trino-deployments/*.yaml"
+  template:
+    metadata:
+      name: 'vault-secrets-{{.trinoDeployment.name}}'
+      namespace: argocd
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: '{{.appProject.name}}'
+      source:
+        repoURL: '{{.git.repoURL}}'
+        targetRevision: '{{.git.targetRevision}}'
+        path: charts/vault-secrets
+        helm:
+          releaseName: vault-secrets
+          valueFiles:
+            - ../../{{.applications.vaultSecrets.valuesFile}}
+      destination:
+        name: '{{.cluster.name}}'
+        namespace: '{{.applications.trino.namespace}}'
+      syncPolicy:
+        automated:
+          prune: {{.applications.vaultSecrets.syncPolicy.automated.prune}}
+          selfHeal: {{.applications.vaultSecrets.syncPolicy.automated.selfHeal}}
+          allowEmpty: {{.applications.vaultSecrets.syncPolicy.automated.allowEmpty}}
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+        retry:
+          limit: {{.applications.vaultSecrets.syncPolicy.retry.limit}}
+          backoff:
+            duration: {{.applications.vaultSecrets.syncPolicy.retry.backoff.duration}}
+            factor: {{.applications.vaultSecrets.syncPolicy.retry.backoff.factor}}
+            maxDuration: >-
+              {{.applications.vaultSecrets.syncPolicy.retry.backoff.maxDuration}}
+
+# Made with Bob

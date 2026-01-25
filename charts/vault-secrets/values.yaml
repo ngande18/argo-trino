@@ -1,0 +1,39 @@
+# Default values for vault-secrets chart
+# This chart creates VaultAuth and VaultStaticSecret resources
+
+# VaultAuth configuration
+vaultAuth:
+  enabled: true
+  name: vault-auth
+  # Vault connection details
+  vaultConnectionRef: vault-connection
+  # Kubernetes auth configuration
+  kubernetes:
+    role: trino-role
+    serviceAccount: trino
+    audiences:
+      - vault
+  # Namespace where VaultAuth will be created
+  namespace: ""  # Defaults to Release.Namespace
+
+# VaultStaticSecret configuration
+vaultStaticSecrets: []
+  # Example:
+  # - name: trino-db-credentials
+  #   enabled: true
+  #   vaultAuthRef: vault-auth
+  #   mount: secret
+  #   path: trino/database
+  #   type: kv-v2
+  #   refreshAfter: 30s
+  #   destination:
+  #     name: trino-db-secret
+  #     create: true
+  #   hmacSecretData: true
+
+# Global settings
+global:
+  # Namespace for all resources (overrides individual namespace settings)
+  namespace: ""
+
+# Made with Bob
