@@ -151,6 +151,207 @@ vaultStaticSecrets:
           config.properties: |
             {{ get .Secrets "key1" }}={{ get .Secrets "value1" }}
             {{ get .Secrets "key2" }}={{ get .Secrets "value2" }}
+## Secret Types and Examples
+
+For comprehensive examples of all secret types, see `apps/values/vault-secrets/EXAMPLES.yaml`.
+
+### 1. KV-V2 Secret (Key-Value Pairs)
+
+Basic key-value secrets from Vault's KV-V2 engine:
+
+```yaml
+vaultStaticSecrets:
+  - name: database-creds
+    enabled: true
+    vaultAuthRef: my-vault-auth
+    mount: secret
+    path: app/database
+    type: kv-v2
+    refreshAfter: 30s
+    destination:
+      name: database-credentials
+      create: true
+      labels:
+        app: myapp
+        type: database
+```
+
+**Vault path:** `secret/data/app/database`  
+**Expected keys:** `username`, `password`, `host`, `port`
+
+### 2. TLS Certificate Secret
+
+PKI certificates from Vault's PKI engine:
+
+```yaml
+vaultStaticSecrets:
+  - name: tls-cert
+    enabled: true
+    vaultAuthRef: my-vault-auth
+    mount: pki
+    path: pki/issue/my-role
+    type: kv-v2
+    refreshAfter: 24h
+    destination:
+      name: my-tls-cert
+      create: true
+      type: kubernetes.io/tls
+      transformation:
+        templates:
+          tls.crt: |
+            {{ get .Secrets "certificate" }}
+          tls.key: |
+            {{ get .Secrets "private_key" }}
+          ca.crt: |
+            {{ get .Secrets "issuing_ca" }}
+```
+
+**Vault returns:** `certificate`, `private_key`, `issuing_ca`, `ca_chain`  
+**Transformed to:** `tls.crt`, `tls.key`, `ca.crt`
+
+### 3. File-Based Secrets (Config Files)
+
+Store configuration files as secrets:
+
+```yaml
+vaultStaticSecrets:
+  - name: config-files
+    enabled: true
+    vaultAuthRef: my-vault-auth
+    mount: secret
+    path: app/config-files
+    type: kv-v2
+    refreshAfter: 60s
+    destination:
+      name: app-config-files
+      create: true
+      transformation:
+        templates:
+          application.yaml: |
+            {{ get .Secrets "application_yaml" }}
+          database.properties: |
+            {{ get .Secrets "database_properties" }}
+          logging.xml: |
+            {{ get .Secrets "logging_xml" }}
+```
+
+**Vault keys:** `application_yaml`, `database_properties`, `logging_xml`  
+**Result:** Files mounted in pod volumes
+
+### 4. Docker Registry Secret
+
+Docker registry credentials:
+
+```yaml
+vaultStaticSecrets:
+  - name: docker-registry
+    enabled: true
+    vaultAuthRef: my-vault-auth
+    mount: secret
+    path: app/docker-registry
+    type: kv-v2
+    refreshAfter: 12h
+    destination:
+      name: docker-registry-secret
+      create: true
+      type: kubernetes.io/dockerconfigjson
+      transformation:
+        templates:
+          .dockerconfigjson: |
+            {
+              "auths": {
+                "{{ get .Secrets "registry_url" }}": {
+                  "username": "{{ get .Secrets "username" }}",
+                  "password": "{{ get .Secrets "password" }}",
+                  "auth": "{{ printf "%s:%s" 
+                    (get .Secrets "username") 
+                    (get .Secrets "password") | b64enc }}"
+                }
+              }
+            }
+```
+
+**Vault keys:** `registry_url`, `username`, `password`
+
+### 5. SSH Key Secret
+
+SSH authentication keys:
+
+```yaml
+vaultStaticSecrets:
+  - name: ssh-key
+    enabled: true
+    vaultAuthRef: my-vault-auth
+    mount: secret
+    path: app/ssh-keys
+    type: kv-v2
+    refreshAfter: 24h
+    destination:
+      name: ssh-key-secret
+      create: true
+      type: kubernetes.io/ssh-auth
+      transformation:
+        templates:
+          ssh-privatekey: |
+            {{ get .Secrets "private_key" }}
+          ssh-publickey: |
+            {{ get .Secrets "public_key" }}
+```
+
+### 6. PKI Certificate with Full Chain
+
+Complete certificate chain for applications:
+
+```yaml
+vaultStaticSecrets:
+  - name: pki-full-chain
+    enabled: true
+    vaultAuthRef: my-vault-auth
+    mount: pki
+    path: pki/issue/server-cert
+    type: kv-v2
+    refreshAfter: 720h  # 30 days
+    destination:
+      name: server-certificate
+      create: true
+      type: kubernetes.io/tls
+      transformation:
+        templates:
+          tls.crt: |
+            {{ get .Secrets "certificate" }}
+            {{ get .Secrets "ca_chain" }}
+          tls.key: |
+            {{ get .Secrets "private_key" }}
+          ca.crt: |
+            {{ get .Secrets "issuing_ca" }}
+          full-chain.crt: |
+            {{ get .Secrets "certificate" }}
+            {{ get .Secrets "issuing_ca" }}
+            {{ get .Secrets "ca_chain" }}
+```
+
+## Kubernetes Secret Types
+
+Supported Kubernetes secret types:
+
+- **`Opaque`** - Default, arbitrary key-value pairs
+- **`kubernetes.io/tls`** - TLS certificates (requires `tls.crt` and `tls.key`)
+- **`kubernetes.io/dockerconfigjson`** - Docker registry credentials
+- **`kubernetes.io/ssh-auth`** - SSH authentication keys
+- **`kubernetes.io/basic-auth`** - HTTP basic authentication
+- **`kubernetes.io/service-account-token`** - Service account token
+
+## Transformation Templates
+
+Transformation templates use Go template syntax with these functions:
+
+- **`get .Secrets "key"`** - Get secret value by key
+- **`printf`** - Format strings
+- **`b64enc`** - Base64 encode
+- **`b64dec`** - Base64 decode
+- **`toJson`** - Convert to JSON
+- **`fromJson`** - Parse JSON
+
 ```
 
 ## Parameters

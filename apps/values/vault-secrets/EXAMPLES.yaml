@@ -1,0 +1,254 @@
+# VaultStaticSecret Examples
+# This file shows different types of secrets you can sync from Vault
+
+vaultAuth:
+  enabled: true
+  name: example-vault-auth
+  vaultConnectionRef: vault-connection
+  kubernetes:
+    role: example-role
+    serviceAccount: default
+    audiences:
+      - vault
+
+vaultStaticSecrets:
+  # Example 1: KV-V2 Secret (Key-Value pairs)
+  - name: example-kv-v2-secret
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: secret
+    path: app/database
+    type: kv-v2
+    refreshAfter: 30s
+    hmacSecretData: true
+    destination:
+      name: database-credentials
+      create: true
+      labels:
+        app: example
+        type: database
+    # Vault path: secret/data/app/database
+    # Expected keys: username, password, host, port
+
+  # Example 2: TLS Certificate Secret
+  - name: example-tls-cert
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: pki
+    path: pki/issue/example-role
+    type: kv-v2
+    refreshAfter: 24h
+    destination:
+      name: example-tls-cert
+      create: true
+      type: kubernetes.io/tls  # Kubernetes TLS secret type
+      labels:
+        app: example
+        type: tls
+      # Transformation to map Vault keys to TLS secret format
+      transformation:
+        templates:
+          tls.crt: |
+            {{ get .Secrets "certificate" }}
+          tls.key: |
+            {{ get .Secrets "private_key" }}
+          ca.crt: |
+            {{ get .Secrets "issuing_ca" }}
+    # Vault returns: certificate, private_key, issuing_ca, ca_chain
+    # Transformed to: tls.crt, tls.key, ca.crt
+
+  # Example 3: File-based Secret (Config files)
+  - name: example-config-files
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: secret
+    path: app/config-files
+    type: kv-v2
+    refreshAfter: 60s
+    destination:
+      name: app-config-files
+      create: true
+      labels:
+        app: example
+        type: config
+      # Transform Vault keys to file names
+      transformation:
+        templates:
+          application.yaml: |
+            {{ get .Secrets "application_yaml" }}
+          database.properties: |
+            {{ get .Secrets "database_properties" }}
+          logging.xml: |
+            {{ get .Secrets "logging_xml" }}
+    # Vault path: secret/data/app/config-files
+    # Keys: application_yaml, database_properties, logging_xml
+    # Mounted as files in pod
+
+  # Example 4: Docker Registry Secret
+  - name: example-docker-registry
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: secret
+    path: app/docker-registry
+    type: kv-v2
+    refreshAfter: 12h
+    destination:
+      name: docker-registry-secret
+      create: true
+      type: kubernetes.io/dockerconfigjson
+      labels:
+        app: example
+        type: registry
+      transformation:
+        templates:
+          .dockerconfigjson: |
+            {
+              "auths": {
+                "{{ get .Secrets "registry_url" }}": {
+                  "username": "{{ get .Secrets "username" }}",
+                  "password": "{{ get .Secrets "password" }}",
+                  "auth": "{{ printf "%s:%s" (get .Secrets "username") (get .Secrets "password") | b64enc }}"
+                }
+              }
+            }
+    # Vault keys: registry_url, username, password
+    # Transformed to Docker config JSON format
+
+  # Example 5: SSH Key Secret
+  - name: example-ssh-key
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: secret
+    path: app/ssh-keys
+    type: kv-v2
+    refreshAfter: 24h
+    destination:
+      name: ssh-key-secret
+      create: true
+      type: kubernetes.io/ssh-auth
+      labels:
+        app: example
+        type: ssh
+      transformation:
+        templates:
+          ssh-privatekey: |
+            {{ get .Secrets "private_key" }}
+          ssh-publickey: |
+            {{ get .Secrets "public_key" }}
+    # Vault keys: private_key, public_key
+    # Kubernetes SSH auth secret format
+
+  # Example 6: Multiple Secrets with Filtering
+  - name: example-filtered-secrets
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: secret
+    path: app/all-secrets
+    type: kv-v2
+    refreshAfter: 30s
+    destination:
+      name: filtered-secrets
+      create: true
+      transformation:
+        # Only include secrets matching pattern
+        includes:
+          - "^prod_.*"  # Only keys starting with prod_
+        # Exclude internal keys
+        excludes:
+          - ".*_internal$"  # Exclude keys ending with _internal
+        # Rename keys
+        templates:
+          database_url: |
+            {{ get .Secrets "prod_db_url" }}
+          api_key: |
+            {{ get .Secrets "prod_api_key" }}
+    # Vault has: prod_db_url, prod_api_key, dev_db_url, secret_internal
+    # Result: database_url, api_key (filtered and renamed)
+
+  # Example 7: Basic Auth Secret
+  - name: example-basic-auth
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: secret
+    path: app/basic-auth
+    type: kv-v2
+    destination:
+      name: basic-auth-secret
+      create: true
+      type: kubernetes.io/basic-auth
+      transformation:
+        templates:
+          username: |
+            {{ get .Secrets "username" }}
+          password: |
+            {{ get .Secrets "password" }}
+    # Kubernetes basic-auth secret format
+
+  # Example 8: Opaque Secret with Multiple Keys
+  - name: example-opaque-multi-key
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: secret
+    path: app/multi-key-secret
+    type: kv-v2
+    refreshAfter: 60s
+    destination:
+      name: multi-key-secret
+      create: true
+      type: Opaque  # Default Kubernetes secret type
+      labels:
+        app: example
+    # No transformation - all Vault keys copied as-is
+    # Vault keys become Kubernetes secret keys directly
+
+  # Example 9: Secret with Rollout Restart
+  - name: example-with-restart
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: secret
+    path: app/critical-config
+    type: kv-v2
+    refreshAfter: 30s
+    hmacSecretData: true
+    # Automatically restart pods when secret changes
+    rolloutRestartTargets:
+      - kind: Deployment
+        name: app-deployment
+      - kind: StatefulSet
+        name: app-statefulset
+      - kind: DaemonSet
+        name: app-daemonset
+    destination:
+      name: critical-config
+      create: true
+      annotations:
+        reloader.stakater.com/match: "true"
+
+  # Example 10: PKI Certificate with Full Chain
+  - name: example-pki-full-chain
+    enabled: true
+    vaultAuthRef: example-vault-auth
+    mount: pki
+    path: pki/issue/server-cert
+    type: kv-v2
+    refreshAfter: 720h  # 30 days
+    destination:
+      name: server-certificate
+      create: true
+      type: kubernetes.io/tls
+      transformation:
+        templates:
+          tls.crt: |
+            {{ get .Secrets "certificate" }}
+            {{ get .Secrets "ca_chain" }}
+          tls.key: |
+            {{ get .Secrets "private_key" }}
+          ca.crt: |
+            {{ get .Secrets "issuing_ca" }}
+          full-chain.crt: |
+            {{ get .Secrets "certificate" }}
+            {{ get .Secrets "issuing_ca" }}
+            {{ get .Secrets "ca_chain" }}
+    # Full certificate chain for applications
+
+# Made with Bob
