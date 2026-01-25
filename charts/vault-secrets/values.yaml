@@ -1,6 +1,13 @@
 # Default values for vault-secrets chart
 # This chart creates VaultAuth and VaultStaticSecret resources
 
+# Namespace configuration
+namespace:
+  create: true
+  name: ""  # Defaults to Release.Namespace
+  labels: {}
+  annotations: {}
+
 # VaultAuth configuration
 vaultAuth:
   enabled: true
