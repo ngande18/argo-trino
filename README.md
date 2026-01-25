@@ -87,7 +87,24 @@ apps/
    cd argo-trino
    ```
 
-3. **Update Git repository URLs:**
+3. **Pull the Trino Helm chart:**
+   
+   The Trino chart is stored as `.tgz` files in the `charts/` directory:
+   ```bash
+   # Add Trino Helm repository
+   helm repo add trinodb https://trinodb.github.io/charts
+   helm repo update
+   
+   # Pull the chart as .tgz file (version 0.19.0 or your desired version)
+   helm pull trinodb/trino --version 0.19.0 --destination charts/
+   
+   # Verify the chart file
+   ls -lh charts/trino-*.tgz
+   ```
+   
+   **Note**: The `.tgz` files are committed to Git, allowing version control and multiple chart versions.
+
+4. **Update Git repository URLs:**
    
    Edit these files and replace `https://github.com/your-org/your-repo.git` with your actual repository URL:
    - `apps/applicationsets/appprojects.yaml`
@@ -96,20 +113,20 @@ apps/
    - `apps/values/clusters/trino-ipc1.yaml`
    - `apps/values/clusters/trino-ipc2.yaml`
 
-4. **Review cluster configurations:**
+5. **Review cluster configurations:**
    ```bash
    cat apps/values/clusters/trino-ipc1.yaml
    cat apps/values/clusters/trino-ipc2.yaml
    ```
 
-5. **Apply the root application:**
+6. **Apply the root application:**
    ```bash
    kubectl apply -f apps/root-app/application.yaml
    ```
    
    Note: The root app uses the `default` ArgoCD project, so no separate AppProject is needed.
 
-6. **Verify deployment:**
+7. **Verify deployment:**
    ```bash
    # Check ApplicationSets
    kubectl get applicationsets -n argocd

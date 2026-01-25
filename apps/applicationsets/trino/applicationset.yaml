@@ -21,17 +21,14 @@ spec:
         - resources-finalizer.argocd.argoproj.io
     spec:
       project: '{{.appProject.name}}'
-      sources:
-        - repoURL: '{{.applications.trino.chart.repoURL}}'
-          chart: '{{.applications.trino.chart.name}}'
-          targetRevision: '{{.applications.trino.chart.version}}'
-          helm:
-            releaseName: trino
-            valueFiles:
-              - $values/{{.applications.trino.valuesFile}}
-        - repoURL: '{{.git.repoURL}}'
-          targetRevision: '{{.git.targetRevision}}'
-          ref: values
+      source:
+        repoURL: '{{.git.repoURL}}'
+        targetRevision: '{{.git.targetRevision}}'
+        chart: '{{.applications.trino.chart.path}}'
+        helm:
+          releaseName: trino
+          valueFiles:
+            - ../../{{.applications.trino.valuesFile}}
       destination:
         name: '{{.cluster.name}}'
         namespace: '{{.applications.trino.namespace}}'

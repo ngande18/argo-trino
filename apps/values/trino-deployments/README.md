@@ -2,6 +2,30 @@
 
 This directory contains deployment-specific configuration files that drive the creation of namespaces, AppProjects, and Applications in ArgoCD.
 
+## Prerequisites
+
+### Trino Helm Chart Setup
+
+The Trino chart is stored as versioned `.tgz` files in the `charts/` directory. To add a new chart version:
+
+```bash
+# Add Trino Helm repository
+helm repo add trinodb https://trinodb.github.io/charts
+helm repo update
+
+# Pull the chart as .tgz file (without extracting)
+helm pull trinodb/trino --version 0.19.0 --destination charts/
+
+# Verify the chart file
+ls -lh charts/trino-*.tgz
+```
+
+**Benefits**:
+- ✅ Chart files are committed to Git for version control
+- ✅ Multiple versions can coexist (e.g., `trino-0.19.0.tgz`, `trino-0.20.0.tgz`)
+- ✅ Each deployment can use a different chart version
+- ✅ Easy rollback to previous versions
+
 ## Structure
 
 Each Trino deployment has its own YAML configuration file:
@@ -83,9 +107,7 @@ applications:
     enabled: true
     namespace: trino-ipc1
     chart:
-      repoURL: https://trinodb.github.io/charts
-      name: trino
-      version: 0.19.0
+      path: charts/trino-0.19.0.tgz  # Specify chart version
     valuesFile: apps/values/trino/trino-ipc1-values.yaml
     syncPolicy:
       automated:

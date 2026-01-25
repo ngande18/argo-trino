@@ -1,0 +1,8 @@
+# Keep .tgz chart files in Git for version control
+# Only ignore extracted directories if any
+trino/
+!*.tgz
+!README.md
+
+# Keep this .gitignore
+!.gitignore
