@@ -16,7 +16,7 @@ spec:
   template:
     metadata:
       name: 'trino-{{.trinoDeployment.name}}'
-      namespace: argocd
+      namespace: '{{.appProject.name}}'
       annotations:
         argocd.argoproj.io/sync-wave: "2"
       finalizers:

@@ -16,7 +16,7 @@ spec:
   template:
     metadata:
       name: 'vault-{{.trinoDeployment.name}}'
-      namespace: argocd
+      namespace: '{{.appProject.name}}'
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
