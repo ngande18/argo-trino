@@ -11,7 +11,7 @@ spec:
   generators:
     - git:
         repoURL: https://github.com/your-org/your-repo.git
-        revision: HEAD
+        revision: main
         files:
           - path: "apps/values/trino-deployments/*.yaml"
   template:

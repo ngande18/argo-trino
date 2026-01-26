@@ -11,7 +11,7 @@ cluster:
 # Git repository configuration
 git:
   repoURL: https://github.com/your-org/your-repo.git
-  targetRevision: HEAD
+  targetRevision: main
 
 # AppProject configuration
 appProject:
