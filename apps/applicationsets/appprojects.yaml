@@ -13,11 +13,13 @@ spec:
         repoURL: https://github.com/your-org/your-repo.git
         revision: main
         files:
-          - path: "apps/values/trino-deployments/*.yaml"
+          - path: "apps/vaules/trino-deployments/trino-deployments.yaml"
+    - list:
+        elementsYaml: "{{ .deployments | toJson }}"
   template:
     metadata:
       name: 'setup-{{.trinoDeployment.name}}'
-      namespace: '{{.appProject.name}}'
+      namespace: argocd
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:

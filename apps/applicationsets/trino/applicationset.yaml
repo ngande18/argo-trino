@@ -12,11 +12,13 @@ spec:
         repoURL: https://github.com/your-org/your-repo.git
         revision: main
         files:
-          - path: "apps/values/trino-deployments/*.yaml"
+          - path: "apps/vaules/trino-deployments/trino-deployments.yaml"
+    - list:
+        elementsYaml: "{{ .deployments | toJson }}"
   template:
     metadata:
       name: 'trino-{{.trinoDeployment.name}}'
-      namespace: '{{.appProject.name}}'
+      namespace: argocd
       annotations:
         argocd.argoproj.io/sync-wave: "2"
       finalizers:
@@ -26,11 +28,11 @@ spec:
       source:
         repoURL: '{{.git.repoURL}}'
         targetRevision: '{{.git.targetRevision}}'
-        chart: '{{.applications.trino.chart.path}}'
+        path: charts/trino/1.41.0/trino
         helm:
           releaseName: trino
           valueFiles:
-            - ../../{{.applications.trino.valuesFile}}
+            - ../../../../{{.applications.trino.valuesFile}}
       destination:
         name: '{{.cluster.name}}'
         namespace: '{{.applications.trino.namespace}}'

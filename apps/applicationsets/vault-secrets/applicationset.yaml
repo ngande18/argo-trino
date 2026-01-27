@@ -12,11 +12,13 @@ spec:
         repoURL: https://github.com/your-org/your-repo.git
         revision: main
         files:
-          - path: "apps/values/trino-deployments/*.yaml"
+          - path: "apps/vaules/trino-deployments/trino-deployments.yaml"
+    - list:
+        elementsYaml: "{{ .deployments | toJson }}"
   template:
     metadata:
       name: 'vault-secrets-{{.trinoDeployment.name}}'
-      namespace: '{{.appProject.name}}'
+      namespace: argocd
       annotations:
         argocd.argoproj.io/sync-wave: "1"
       finalizers:
@@ -30,7 +32,7 @@ spec:
         helm:
           releaseName: vault-secrets
           valueFiles:
-            - ../../{{.applications.vaultSecrets.valuesFile}}
+            - ../../../{{.applications.vaultSecrets.valuesFile}}
       destination:
         name: '{{.cluster.name}}'
         namespace: '{{.applications.trino.namespace}}'

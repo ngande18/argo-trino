@@ -1,0 +1,121 @@
+# Trino Deployments Configuration
+# Define all Trino instances in this single file
+
+deployments:
+  # First Trino instance
+  - trinoDeployment:
+      name: trino-ipc1-maestro
+      description: Trino instance for IPC1 Maestro cluster
+    cluster:
+      name: ipc-cluster-1
+    git:
+      repoURL: https://github.com/your-org/your-repo.git
+      targetRevision: main
+    appProject:
+      name: trino-ipc1-maestro
+      description: AppProject for Trino instance trino-ipc1-maestro
+      sourceRepos:
+        - '*'
+      destinations:
+        - namespace: trino-ipc1-maestro
+          name: ipc-cluster-1
+      clusterResourceWhitelist:
+        - group: '*'
+          kind: '*'
+      namespaceResourceWhitelist:
+        - group: '*'
+          kind: '*'
+      orphanedResources:
+        warn: true
+    applications:
+      trino:
+        enabled: true
+        namespace: trino-ipc1-maestro
+        chart:
+          path: charts/trino/1.41.0/trino
+        valuesFile: apps/vaules/trino/trino-ipc1-maestro.yaml
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+            allowEmpty: false
+          retry:
+            limit: 5
+            backoff:
+              duration: 5s
+              factor: 2
+              maxDuration: 3m
+      vaultSecrets:
+        enabled: true
+        valuesFile: apps/vaules/vault-secrets/trino-ipc1-maestro.yaml
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+            allowEmpty: false
+          retry:
+            limit: 5
+            backoff:
+              duration: 5s
+              factor: 2
+              maxDuration: 3m
+
+  # Second Trino instance
+  - trinoDeployment:
+      name: trino-ipc2-worker
+      description: Trino instance for IPC2 Worker cluster
+    cluster:
+      name: ipc-cluster-2
+    git:
+      repoURL: https://github.com/your-org/your-repo.git
+      targetRevision: main
+    appProject:
+      name: trino-ipc2-worker
+      description: AppProject for Trino instance trino-ipc2-worker
+      sourceRepos:
+        - '*'
+      destinations:
+        - namespace: trino-ipc2-worker
+          name: ipc-cluster-2
+      clusterResourceWhitelist:
+        - group: '*'
+          kind: '*'
+      namespaceResourceWhitelist:
+        - group: '*'
+          kind: '*'
+      orphanedResources:
+        warn: true
+    applications:
+      trino:
+        enabled: true
+        namespace: trino-ipc2-worker
+        chart:
+          path: charts/trino/1.41.0/trino
+        valuesFile: apps/vaules/trino/trino-ipc2-worker.yaml
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+            allowEmpty: false
+          retry:
+            limit: 5
+            backoff:
+              duration: 5s
+              factor: 2
+              maxDuration: 3m
+      vaultSecrets:
+        enabled: true
+        valuesFile: apps/vaules/vault-secrets/trino-ipc2-worker.yaml
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+            allowEmpty: false
+          retry:
+            limit: 5
+            backoff:
+              duration: 5s
+              factor: 2
+              maxDuration: 3m
+
+# Made with Bob

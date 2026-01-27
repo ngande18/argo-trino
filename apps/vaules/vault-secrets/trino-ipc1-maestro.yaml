@@ -1,0 +1,192 @@
+# Vault Secrets Configuration for trino-ipc1-maestro
+# This file defines the three types of secrets for this Trino deployment
+
+vaultAuth:
+  enabled: true
+  name: trino-ipc1-maestro-vault-auth
+  vaultConnectionRef: vault-connection
+  kubernetes:
+    role: trino-ipc1-maestro-role
+    serviceAccount: trino
+    audiences:
+      - vault
+
+vaultStaticSecrets:
+  # ============================================================================
+  # 1. ENVIRONMENT VARIABLES SECRET: trino-ipc1-maestro-secrets
+  # ============================================================================
+  # Purpose: Store sensitive key-value pairs (passwords, tokens, keys)
+  # Usage: Mounted as environment variables in Trino pods
+  # Vault Path: secret/data/trino-ipc1-maestro/secrets
+  
+  - name: trino-ipc1-maestro-secrets
+    enabled: true
+    vaultAuthRef: trino-ipc1-maestro-vault-auth
+    mount: secret
+    path: trino-ipc1-maestro/secrets
+    type: kv-v2
+    refreshAfter: 30s
+    hmacSecretData: true
+    rolloutRestartTargets:
+      - kind: StatefulSet
+        name: trino-coordinator
+      - kind: StatefulSet
+        name: trino-worker
+    destination:
+      name: trino-ipc1-maestro-secrets
+      create: true
+      type: Opaque
+      labels:
+        app: trino
+        deployment: trino-ipc1-maestro
+        secret-type: env-vars
+      annotations:
+        description: "Environment variables for Trino catalogs"
+    # Expected Vault keys:
+    # - mysql_password: MySQL database password
+    # - postgres_password: PostgreSQL database password
+    # - s3_access_key: S3 access key
+    # - s3_secret_key: S3 secret key
+    # - hive_metastore_password: Hive metastore password
+    # - kafka_sasl_password: Kafka SASL password
+
+  # ============================================================================
+  # 2. CERTIFICATES SECRET: trino-ipc1-maestro-certificates
+  # ============================================================================
+  # Purpose: Store TLS certificates, private keys, and CA certificates
+  # Usage: Mounted as files in /etc/trino/certificates/
+  # Vault Path: pki/issue/trino-cert (PKI engine for auto-generated certs)
+  
+  - name: trino-ipc1-maestro-certificates
+    enabled: true
+    vaultAuthRef: trino-ipc1-maestro-vault-auth
+    mount: pki
+    path: pki/issue/trino-cert
+    type: kv-v2
+    refreshAfter: 720h  # 30 days - certificates auto-rotate
+    destination:
+      name: trino-ipc1-maestro-certificates
+      create: true
+      type: kubernetes.io/tls
+      labels:
+        app: trino
+        deployment: trino-ipc1-maestro
+        secret-type: certificates
+      annotations:
+        description: "TLS certificates for Trino and catalog connections"
+      transformation:
+        templates:
+          # Standard TLS certificate
+          tls.crt: |
+            {{ get .Secrets "certificate" }}
+          tls.key: |
+            {{ get .Secrets "private_key" }}
+          ca.crt: |
+            {{ get .Secrets "issuing_ca" }}
+          # Full certificate chain
+          full-chain.crt: |
+            {{ get .Secrets "certificate" }}
+            {{ get .Secrets "issuing_ca" }}
+            {{ get .Secrets "ca_chain" }}
+    # Mounted files in pod:
+    # - /etc/trino/certificates/tls.crt
+    # - /etc/trino/certificates/tls.key
+    # - /etc/trino/certificates/ca.crt
+    # - /etc/trino/certificates/full-chain.crt
+
+  # Alternative: Store certificates in KV-V2 instead of PKI
+  # - name: trino-ipc1-maestro-certificates-kv
+  #   enabled: false
+  #   vaultAuthRef: trino-ipc1-maestro-vault-auth
+  #   mount: secret
+  #   path: trino-ipc1-maestro/certificates
+  #   type: kv-v2
+  #   refreshAfter: 24h
+  #   destination:
+  #     name: trino-ipc1-maestro-certificates
+  #     create: true
+  #     type: kubernetes.io/tls
+
+  # ============================================================================
+  # 3. CONFIG FILES SECRET: trino-ipc1-maestro-configfiles
+  # ============================================================================
+  # Purpose: Store catalog configuration files and other config files
+  # Usage: Mounted as files in /etc/trino/configfiles/
+  # Vault Path: secret/data/trino-ipc1-maestro/configfiles
+  
+  - name: trino-ipc1-maestro-configfiles
+    enabled: true
+    vaultAuthRef: trino-ipc1-maestro-vault-auth
+    mount: secret
+    path: trino-ipc1-maestro/configfiles
+    type: kv-v2
+    refreshAfter: 60s
+    hmacSecretData: true
+    rolloutRestartTargets:
+      - kind: StatefulSet
+        name: trino-coordinator
+      - kind: StatefulSet
+        name: trino-worker
+    destination:
+      name: trino-ipc1-maestro-configfiles
+      create: true
+      type: Opaque
+      labels:
+        app: trino
+        deployment: trino-ipc1-maestro
+        secret-type: config-files
+      annotations:
+        description: "Configuration files for Trino catalogs"
+    # Expected Vault keys (each key becomes a file):
+    # - mysql.properties: MySQL catalog configuration
+    # - postgresql.properties: PostgreSQL catalog configuration
+    # - hive.properties: Hive catalog configuration
+    # - iceberg.properties: Iceberg catalog configuration
+    # - kafka.properties: Kafka catalog configuration
+    # - trino.keytab: Kerberos keytab file
+    # - krb5.conf: Kerberos configuration
+    # - core-site.xml: Hadoop core-site configuration
+    # - hdfs-site.xml: Hadoop HDFS configuration
+    
+    # Mounted files in pod:
+    # - /etc/trino/configfiles/mysql.properties
+    # - /etc/trino/configfiles/postgresql.properties
+    # - /etc/trino/configfiles/hive.properties
+    # - /etc/trino/configfiles/iceberg.properties
+    # - /etc/trino/configfiles/kafka.properties
+    # - /etc/trino/configfiles/trino.keytab
+    # - /etc/trino/configfiles/krb5.conf
+    # - /etc/trino/configfiles/core-site.xml
+    # - /etc/trino/configfiles/hdfs-site.xml
+
+# ============================================================================
+# VAULT SECRET STORAGE EXAMPLES
+# ============================================================================
+
+# To store secrets in Vault, use these commands:
+
+# 1. Store environment variables (passwords, keys, tokens)
+# vault kv put secret/trino-ipc1-maestro/secrets \
+#   mysql_password="SecurePassword123" \
+#   postgres_password="AnotherSecurePass" \
+#   s3_access_key="AKIAIOSFODNN7EXAMPLE" \
+#   s3_secret_key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
+#   hive_metastore_password="HivePassword" \
+#   kafka_sasl_password="KafkaPassword"
+
+# 2. Store certificates (if using KV-V2 instead of PKI)
+# vault kv put secret/trino-ipc1-maestro/certificates \
+#   tls.crt=@/path/to/cert.pem \
+#   tls.key=@/path/to/key.pem \
+#   ca.crt=@/path/to/ca.pem
+
+# 3. Store configuration files
+# vault kv put secret/trino-ipc1-maestro/configfiles \
+#   mysql.properties="$(cat mysql.properties)" \
+#   postgresql.properties="$(cat postgresql.properties)" \
+#   hive.properties="$(cat hive.properties)" \
+#   iceberg.properties="$(cat iceberg.properties)" \
+#   trino.keytab=@trino.keytab \
+#   krb5.conf=@krb5.conf
+
+# Made with Bob
