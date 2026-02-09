@@ -155,17 +155,129 @@ No direct changes are made inside the cluster.
 
 ---
 
-## Summary
+## Pull Request (PR)–Driven Catalog Lifecycle
 
-This model ensures:
+All Trino catalog changes follow a **Pull Request–based workflow** to ensure auditability, peer review, and controlled rollout.
 
-* Secure, auditable catalog deployments
-* Clear separation of secrets and configuration
-* Scalable onboarding of new catalogs
-* Consistent behavior across environments
+### Why PR-Based Management
 
-By enforcing Vault readiness first and GitOps-driven catalog definitions second, Trino catalog management remains safe, predictable, and easy to operate.
+* Enforces separation of duties (author vs reviewer)
+* Provides a clear change history for catalogs and secrets
+* Prevents accidental or unauthorized catalog creation
+* Aligns with GitOps best practices
 
 ---
 
-*This document can be extended with catalog-specific examples (S3, Kerberos, JDBC, Iceberg, etc.) as needed.*
+## End-to-End PR Workflow
+
+### Step 1: Create a Feature Branch
+
+Create a new branch from the main (master) branch:
+
+* Branch naming example:
+
+  * `feature/add-iceberg-catalog`
+  * `feature/add-s3-backed-catalog`
+
+This branch will contain **both**:
+
+* Vault-related secret updates (Azure Cloud Vault → HashiCorp Vault)
+* Trino catalog configuration changes
+
+---
+
+### Step 2: Add / Update Sensitive Information
+
+As part of the same branch:
+
+* Upload required sensitive information to **Azure Cloud Vault**
+* Sync secrets into **HashiCorp Vault** under the correct path
+* Validate secrets exist for the target:
+
+  * Cluster
+  * Namespace
+
+No Kubernetes Secrets are created manually.
+
+---
+
+### Step 3: Update Trino Catalog Configuration
+
+Update the Trino Helm `values.yaml` for the target instance:
+
+* Add a new catalog entry under `additionalCatalogs`
+* Reference:
+
+  * Environment variables (for KV secrets)
+  * Mounted files (for keystores, keytabs, TLS)
+* Do **not** embed secret values
+
+This file remains the **single source of truth** for all catalogs in that Trino instance.
+
+---
+
+### Step 4: Open a Pull Request
+
+Open a PR targeting the `master` branch.
+
+The PR should include:
+
+* Clear description of the catalog being added
+* Connector type and data source
+* List of required secrets
+* Confirmation that Vault injection is complete
+
+---
+
+### Step 5: Peer Review and Validation
+
+Reviewers validate:
+
+* Correct Vault paths and namespace usage
+* No hardcoded secrets in Git
+* Proper catalog property configuration
+* Alignment with security and naming standards
+
+PR approval is required before merge.
+
+---
+
+### Step 6: Merge and Automatic Deployment
+
+Once the PR is merged:
+
+* GitHub becomes the trigger point
+* GitOps controller detects changes
+* Helm re-renders Trino configuration
+* New catalog `.properties` file is generated
+* Trino instances automatically load the catalog
+
+No manual deployment or restart steps are required.
+
+---
+
+## Operational Guarantees
+
+This workflow guarantees:
+
+* Every catalog change is traceable to a PR
+* Every catalog has a reviewer-approved design
+* Secrets always exist before catalogs are activated
+* Trino instances remain declarative and reproducible
+
+---
+
+## Summary
+
+By enforcing a PR-driven workflow, Trino catalog management becomes:
+
+* Secure
+* Auditable
+* Repeatable
+* Fully GitOps-aligned
+
+Catalogs are added only through code review, secrets are always Vault-backed, and Trino stays consistent across all environments.
+
+---
+
+*This PR workflow can be extended with CI checks, policy validation, or automated secret verification if needed.*
